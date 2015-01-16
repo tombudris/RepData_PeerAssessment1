@@ -10,7 +10,6 @@ output:
 ## Loading and preprocessing the data
 We begin by simply reading the CSV file into a data frame, and then generate summary data frames to use for analysis later...
 ```{r read_summarise}
-#setwd('/Users/tom/Desktop/JHU Data Science/5-reproducible research/assessment1')
 library(plyr)
 rawdata<-read.csv('activity.csv', colClasses=c("integer", "Date", "integer"))
 ## Summarise total steps per date (over intervals), and remove any NA values...
