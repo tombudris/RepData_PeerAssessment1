@@ -58,8 +58,7 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 <div id="loading-and-preprocessing-the-data" class="section level2">
 <h2>Loading and preprocessing the data</h2>
 <p>We begin by simply reading the CSV file into a data frame, and then generate summary data frames to use for analysis later…</p>
-<pre class="r"><code>#setwd('/Users/tom/Desktop/JHU Data Science/5-reproducible research/assessment1')
-library(plyr)
+<pre class="r"><code>library(plyr)
 rawdata&lt;-read.csv('activity.csv', colClasses=c(&quot;integer&quot;, &quot;Date&quot;, &quot;integer&quot;))
 ## Summarise total steps per date (over intervals), and remove any NA values...
 daySummary &lt;- ddply(rawdata, .(date), summarise, total=sum(steps, na.rm=TRUE))
