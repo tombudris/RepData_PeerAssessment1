@@ -6,20 +6,94 @@ output:
 ---
 
 
+
 ## Loading and preprocessing the data
+We begin by simply reading the CSV file into a data frame, and then generate summary data frames to use for analysis later...
+```{r read_summarise}
+#setwd('/Users/tom/Desktop/JHU Data Science/5-reproducible research/assessment1')
+library(plyr)
+rawdata<-read.csv('activity.csv', colClasses=c("integer", "Date", "integer"))
+## Summarise total steps per date (over intervals), and remove any NA values...
+daySummary <- ddply(rawdata, .(date), summarise, total=sum(steps, na.rm=TRUE))
+## Summarise average steps per interval (over days) 
+intSummary <- ddply(rawdata, .(interval), summarise, avg=mean(steps, na.rm=TRUE))
+```
 
 
 
 ## What is mean total number of steps taken per day?
+Let's examine a histogram showing the frequency of various step totals per day, using a bin width of 2000 steps:
+```{r plot_histogram, echo=FALSE}
+library(ggplot2)
+stepHist <- ggplot(daySummary) + theme_bw() +
+            geom_histogram(aes(x=total), binwidth=2000, color="gray") +
+            labs(x='daily step total', y='frequency')
+print(stepHist) 
+```
+
+Summarising over the entire data set,
+```{r calc_summary1}
+## Calculate our summary statistics
+dayMean <- mean(daySummary$total)
+dayMedian <- median(daySummary$total) 
+```
+The mean daily step total is **`r format(dayMean, digits=6)`** steps.  The median daily step total is **`r format(dayMedian, digits=6)`** steps.
 
 
 
 ## What is the average daily activity pattern?
+To illustrate daily patterns (activity across intervals), we'll use a line plot based on the second summary data frame generated earlier ('intSummary'):
+```{r plot_lineplot, echo=FALSE}
+intLineplot <-  ggplot(intSummary) + theme_bw() +
+                geom_line(aes(x=interval, y=avg)) +
+                labs(x='interval', y='average total steps')
+print(intLineplot)
+```
+
+Averaging across all dates in this data set, the peak average in total steps (`r format(subset(intSummary, avg==max(intSummary$avg))$avg, digits=4)`) occurs at interval **`r subset(intSummary, avg==max(intSummary$avg))$interval`**
 
 
 
 ## Imputing missing values
+Ths data set contains some amount of missing data (encoded as 'NA'). Re-examining the raw data, we find that there are **`r sum(is.na(rawdata$steps))`** missing values.
 
+This void in data collection can skew the various statistics above by over-estimating the number of "zero" values when computing histograms and other measures based on daily totals.  We can mitigate this by subsituting any 'NA' values with the corresponding interval average (as plotted above).
 
+```{r merge_avg_missing}
+## first, merge the raw data with the interval summary data, matching intervals...
+newdata<-merge(rawdata, intSummary, by="interval")
+## second, copy the interval avg into the "steps" column for those rows with 'NA' for step counts
+newdata[is.na(newdata$steps),]$steps<-newdata[is.na(newdata$steps),]$avg
+```
+
+Re-generating the histogram and summary statistics as above with this modified data set,
+
+```{r plot_new_histogram, echo=FALSE}
+newDaySummary <- ddply(newdata, .(date), summarise, total=sum(steps))
+newStepHist <-  ggplot(newDaySummary) + theme_bw() +
+                geom_histogram(aes(x=total), binwidth=2000, color="gray") 
+print(newStepHist)
+```
+
+We see that the general shape of the histogram is preserved, with the exception of the removal of the large "bulge" covering the bin containing "zero" steps.  This reduction in the skewness is refelcted in the summary statistics as well: the median total steps (**`r format(median(newDaySummary$total),digits=6)`**) is increased slightly, but the mean total steps (**`r format(mean(newDaySummary$total),digits=6)`**) has risen more substantially (moving away from zero and closer to the peak on the histogram) and is now equal to the median.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+We'll use the modified data set from the previous section for this.  Augmenting our data frame to reflect weekdays vs. weekend days, and then summarising by interval vs weekend/weekday:
+
+```{r weekend_factor}
+newdata$weekend<-factor(weekdays(newdata$date) %in% c("Saturday","Sunday"), labels=c("weekday", "weekend"))
+newIntSummary <- ddply(newdata, .(interval, weekend), summarise, avg=mean(steps))
+```
+
+We can now compare average step activity across intervals for weekdays vs. weekends:
+
+```{r weekend_interval_plots, echo=FALSE}
+newIntLineplot <- ggplot(newIntSummary)+theme_bw() + 
+                geom_line(aes(x=interval, y=avg)) +
+                facet_wrap(~ weekend, nrow=2) + 
+                labs(y='Number of Steps', x='Interval')
+print(newIntLineplot)
+```
+
+Clearly, the plots above indicate that weekday activity is very different than weekend activity... While some features of the plot shapes are similar (e.g. an initial "spike" in the mornings), weekend activity appears to be more evenly distributed across the day.
+
