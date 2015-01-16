@@ -33,26 +33,48 @@ The mean daily step total is **9354.23** steps.  The median daily step total is 
 
 ## What is the average daily activity pattern?
 To illustrate daily patterns (activity across intervals), we'll use a line plot based on the second summary data frame generated earlier ('intSummary'):
+
+```r
+intLineplot <-  ggplot(intSummary) + theme_bw() +
+                geom_line(aes(x=interval, y=avg)) +
+                labs(x='interval', y='average total steps')
+print(intLineplot)
+```
+
 ![](PA1_template_files/figure-html/plot_lineplot-1.png) 
 
-Averaging across all dates in this data set, the peak average in total steps (206.2) occurs at interval **835**
+Focusing on that maximum peak in the plot,
+
+```r
+maxPt<-subset(intSummary, avg==max(intSummary$avg))
+```
+
+So, averaging across all dates in this data set, the peak average in total steps (206.2) occurs at interval **835**
 
 
 
 ## Imputing missing values
 Ths data set contains some amount of missing data (encoded as 'NA'). Re-examining the raw data, we find that there are **2304** missing values.
 
-This void in data collection can skew the various statistics above by over-estimating the number of "zero" values when computing histograms and other measures based on daily totals.  We can mitigate this by subsituting any 'NA' values with the corresponding interval average (as plotted above).
+This void in data collection can skew the various statistics above by over-estimating the number of "zero" values when computing histograms and other measures that are based on daily totals.  We can mitigate this by subsituting any 'NA' values with the corresponding interval average (as plotted above).
 
 
 ```r
-## first, merge the raw data with the interval summary data, matching intervals...
+## first, merge the raw data with the interval summary data, matching by the interval field...
 newdata<-merge(rawdata, intSummary, by="interval")
 ## second, copy the interval avg into the "steps" column for those rows with 'NA' for step counts
 newdata[is.na(newdata$steps),]$steps<-newdata[is.na(newdata$steps),]$avg
 ```
 
 Re-generating the histogram and summary statistics as above with this modified data set,
+
+
+```r
+newDaySummary <- ddply(newdata, .(date), summarise, total=sum(steps))
+newStepHist <-  ggplot(newDaySummary) + theme_bw() +
+                geom_histogram(aes(x=total), binwidth=2000, color="gray") 
+print(newStepHist)
+```
 
 ![](PA1_template_files/figure-html/plot_new_histogram-1.png) 
 
@@ -63,11 +85,21 @@ We'll use the modified data set from the previous section for this.  Augmenting 
 
 
 ```r
-newdata$weekend<-factor(weekdays(newdata$date) %in% c("Saturday","Sunday"), labels=c("weekday", "weekend"))
+newdata$weekend<-factor(weekdays(newdata$date) %in% c("Saturday","Sunday"), 
+                        labels=c("weekday", "weekend"))
 newIntSummary <- ddply(newdata, .(interval, weekend), summarise, avg=mean(steps))
 ```
 
 We can now compare average step activity across intervals for weekdays vs. weekends:
+
+
+```r
+newIntLineplot <- ggplot(newIntSummary)+theme_bw() + 
+                geom_line(aes(x=interval, y=avg)) +
+                facet_wrap(~ weekend, nrow=2) + 
+                labs(y='Number of Steps', x='Interval')
+print(newIntLineplot)
+```
 
 ![](PA1_template_files/figure-html/weekend_interval_plots-1.png) 
 
