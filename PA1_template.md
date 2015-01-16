@@ -18,6 +18,15 @@ intSummary <- ddply(rawdata, .(interval), summarise, avg=mean(steps, na.rm=TRUE)
 
 ## What is mean total number of steps taken per day?
 Let's examine a histogram showing the frequency of various step totals per day, using a bin width of 2000 steps:
+
+```r
+library(ggplot2)
+stepHist <- ggplot(daySummary) + theme_bw() +
+            geom_histogram(aes(x=total), binwidth=2000, color="gray") +
+            labs(x='daily step total', y='frequency')
+print(stepHist) 
+```
+
 ![](PA1_template_files/figure-html/plot_histogram-1.png) 
 
 Summarising over the entire data set,
@@ -78,7 +87,13 @@ print(newStepHist)
 
 ![](PA1_template_files/figure-html/plot_new_histogram-1.png) 
 
-We see that the general shape of the histogram is preserved, with the exception of the removal of the large "bulge" covering the bin containing "zero" steps.  This reduction in the skewness is refelcted in the summary statistics as well: the median total steps (**10766.2**) is increased slightly, but the mean total steps (**10766.2**) has risen more substantially (moving away from zero and closer to the peak on the histogram) and is now equal to the median.
+We see that the general shape of the histogram is preserved, with the exception of the removal of the large "bulge" covering the bin containing "zero" steps.  This reduction in the skewness is refelcted in the recomputed summary statistics as well: 
+
+```r
+newDayMedian<-median(newDaySummary$total)
+newDayMean<-mean(newDaySummary$total)
+```
+The median total steps (**10766.2**) is increased slightly, but the mean total steps (**10766.2**) has risen more substantially (moving away from zero and closer to the peak on the histogram) and is now equal to the median.
 
 ## Are there differences in activity patterns between weekdays and weekends?
 We'll use the modified data set from the previous section for this.  Augmenting our data frame to reflect weekdays vs. weekend days, and then summarising by interval vs weekend/weekday:
